@@ -1,0 +1,110 @@
+---
+title: "CSS692_HW2"
+author: "Greg Tozzi"
+date: "2/13/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Importing and Exploring the Graph
+
+The igraph package in R had difficult parsing the provided Pajek version of the Attior graph.  Rather than develop a parser to correc this issue, I used Gephi to convert the graph from the Pajek format to a graphml file.  I then edited the file in R to remove spurious auto-assignments.  For instance, both Gephi and the igraph package assigned connection types to edge weights.  I also assigned the default group identifiers to the graph.
+
+A plot of the resulting graph follows.  In this plot, and the plots that follow, node groupings map to vertex colors while relation types map to edge colors as:
+
+Relation      | Color
+------------- | -------------
+Ordinary      | <span style="color:#7716FF">Purple</span>
+Kin           | <span style="color:#FF2851">Pink</span>
+Ritual Kin    | <span style="color:#8E8E93">Grey</span>
+
+
+```{r, echo=FALSE}
+suppressMessages(require(igraph))
+source('helper_functions.R')
+Attiro <- read_graph('Attiro.graphml',
+                     format = 'graphml')
+
+Attiro <- as.directed(Attiro)
+
+Attiro_Grouping <- read.csv('Attiro_Grouping.csv')
+V(Attiro)$label <- Attiro_Grouping$Label %>% as.character
+Group <- Attiro_Grouping$group
+V(Attiro)$group <- Group
+Palette <- character()
+for(i in 1:length(unique(Group))) {
+  Palette[which(Group == unique(Group)[i])] <- colors_ok_go[i]
+}
+V(Attiro)$color <- unlist(Palette)
+E(Attiro)$type <- E(Attiro)$weight
+delete_edge_attr(Attiro, 'weight')
+edgeColors <- sapply(E(Attiro)$type, function(x) colors_edges[x])
+E(Attiro)$color <- edgeColors
+
+plot(Attiro,
+     vertex.label = V(Attiro)$label,
+     #edge.color = E(Attiro)$type,
+     edge.arrow.size = 0.3,
+     vertex.label.family = "Futura Medium",
+     vertex.label.color = 'white',
+     vertex.frame.color = 'white',
+     vertex.label.cex = 0.5)
+```
+
+### Applying the Girvan–Newman Algorithm
+
+```{r, echo=FALSE}
+GN <- cluster_edge_betweenness(Attiro, directed = FALSE)
+GN_mem <- membership(GN)
+GN_colors <- assign_colors(GN_mem, colors_ok_go)
+V(Attiro)$GN_mem <- GN_mem
+V(Attiro)$GN_colors <- GN_colors
+```
+
+I applied the Girvan-Newman algoritm with a call to the igraph package's `cluster_edge_betweenness` function.  Following Newman and Girvan (2003), I treated the graph as undirected by setting the parameter `directed = FALSE`.  The resulting division of the graph into communities resulted in a modularity of `r modularity(GN) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
+
+```{r, echo=FALSE}
+plot_Attiro(Attiro, V(Attiro)$GN_colors)
+```
+
+Compared with the investigators' graph, the communities detected by the Girvan-Newman algoritm appear to be more consistent with the topology of the graph.
+
+### Applying the Fast Greedy Algorithm
+
+```{r, echo=FALSE}
+Attiro_undirected <- as.undirected(Attiro, mode = 'collapse')
+FG <- cluster_fast_greedy(Attiro_undirected)
+FG_mem <- membership(FG)
+FG_colors <- assign_colors(FG_mem, colors_ok_go)
+V(Attiro)$FG_mem <- FG_mem
+V(Attiro)$FG_colors <- FG_colors
+```
+
+I applied the fast greedy algoritm described in Cluaset et al. (2004) with a call to the igraph package's `cluster_fast_greedy` function.  The implentation in igraph requires that the graph first be converted to an undirected graph.  I accomplished this through a call to `as.undirected`.  The resulting division of the graph into communities produced a modularity of `r modularity(FG) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
+
+```{r, echo=FALSE}
+plot_Attiro(Attiro, V(Attiro)$FG_colors)
+```
+
+In addtion to improving modularity somewhat over using the Girvan–Newman algorithm, the fast greedy algoritm produced a bit more intuative graph.  In particular, the handling of the nodes connected to the main graph via f72 seems more natural when partitioning using the fast greedy algorithm.
+
+### Applying the Propogating Labels Algorithm
+
+```{r, echo=FALSE}
+PL <- cluster_label_prop(Attiro_undirected)
+PL_mem <- membership(PL)
+PL_colors <- assign_colors(PL_mem, colors_ok_go)
+V(Attiro)$PL_mem <- PL_mem
+V(Attiro)$PL_colors <- PL_colors
+```
+
+I applied the propogating labels algorithm described in Raghavan et al. (2007) with a call to the igraph package's `cluster_label_prop` function.  The principal beneift of this alorithm is its speed, although that benefit is not evident when the algorithm is applied to this fairly modest graph.  As with the fast greedy algorithm, the implentation of the propograting labels algorithm in igraph requires that the graph first be converted to an undirected graph.  The resulting division of the graph into communities produced a modularity of `r modularity(PL) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
+
+```{r, echo=FALSE}
+plot_Attiro(Attiro, V(Attiro)$PL_colors)
+```
+
+The modularity returned by this algorithm is impressive given that it is claimed to operate in near linear time.
