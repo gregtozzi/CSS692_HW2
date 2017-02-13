@@ -1,0 +1,127 @@
+# see this blog post for a nice overview of community detection algorithms
+# http://www.r-bloggers.com/summary-of-community-detection-algorithms-in-igraph-0-6/
+
+
+##############
+### load the igraph library
+##############
+# you may have to install this module if you haven't already
+
+library(igraph)
+
+
+##############
+### load data 
+##############
+
+
+net=read.graph("dolphins.gml",format="gml")
+# see how to laod other formats of network data
+help(read.graph)
+
+summary(net)
+
+netMatrix=get.adjacency(net)
+netMatrixBinary = get.adjacency(net, binary = TRUE)
+
+help(get.adjacency)
+
+
+layout1=layout.fruchterman.reingold(net)
+
+#tkplot(net,layout=layout1,vertex.size=10)
+
+
+##############
+### perform community detection based on edge betweenness 
+##############
+
+btw=edge.betweenness.community (net)
+btw_dendro=as.dendrogram(btw)
+
+dev.new()
+plot(btw_dendro)
+
+
+
+##############
+###obtaining 2 clusters
+##############
+cut1=community.to.membership(net, btw$merges, steps=dim(btw$merges)[1]-1)
+cut1=cut1$membership
+color1=rep(NULL,length(cut1))
+color1[cut1==0]="red"
+color1[cut1==1]="yellow"
+
+dev.new()
+ps.options(family="serif")
+plot(net,layout=layout1,vertex.size=10,vertex.color=color1,vertex.label=NA,main="betweenness,2 clusters")
+
+
+
+
+##############
+###obtaining 4 clusters
+##############
+
+
+cut2=community.to.membership(net, btw$merges, steps=dim(btw$merges)[1]-3)
+cut2=cut2$membership
+color2=rep(NULL,length(cut2))
+color2[cut2==0]="red"
+color2[cut2==1]="yellow"
+color2[cut2==2]="blue"
+color2[cut2==3]="purple"
+
+
+
+dev.new()
+ps.options(family="serif")
+plot(net,layout=layout1,vertex.size=10,vertex.color=color2,vertex.label=NA,main="betweenness,4 clusters")
+
+
+
+
+##############
+### use modularity() to find the modularity of any given partition 
+##############
+
+
+modularity(net, cut1)
+modularity(net, cut2)
+
+
+
+##############
+### perform community detection based on cliques 
+##############
+
+# Find all maximal cliques
+maximal.cliques(net)
+
+
+# Hierarchial clustering the co-membership matrix (as a similarity/distance matrix)
+
+# Clustering analysis in R
+library(cluster)
+clust1<-hclust(matrix,"average")
+plot(clust1)
+# cut based on number of clusters
+cut1<-cutree(clust1,k=5)
+# cut based on similarity levels
+cut2<-cutree(clust1,h=0.65)
+plot(democlust, labels = as.character(cut1))
+
+##############
+### perform community detection using fastgreedy algorithm 
+##############
+
+fc = fastgreedy.community(as.undirected(graph))
+
+# community sizes
+sizes(fc)
+
+# membership in 30th community
+V(g)$label[membership(fc)==30]
+
+
