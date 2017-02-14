@@ -28,8 +28,6 @@ source('helper_functions.R')
 Attiro <- read_graph('Attiro.graphml',
                      format = 'graphml')
 
-Attiro <- as.directed(Attiro)
-
 Attiro_Grouping <- read.csv('Attiro_Grouping.csv')
 V(Attiro)$label <- Attiro_Grouping$Label %>% as.character
 Group <- Attiro_Grouping$group
@@ -53,6 +51,12 @@ plot(Attiro,
      vertex.frame.color = 'white',
      vertex.label.cex = 0.5)
 ```
+
+The modularity associated with the grouping assigned by the investigators can be computed by first treating the graph as undirected by applying the `as.undirected` function with `mode = collapse`, then applying the `modularity` function to the graph using the given groupings.  The resulting modularity is `r modularity(as.undirected(Attiro, mode = 'collapse'), Group) %>% round(4)` which is essentially no better than that of an undivided network.
+
+#### Hand-checking igraph's modularity calculations
+
+The extremely low value of modularatiy for the graph using the investigators' partitioning made me question how igraph is computing modularity.  As a check, I implimented a modularity computation based on the matrix formulation available on Wikipedia.  My implimentation is available on GitHub 
 
 ### Applying the Girvan–Newman Algorithm
 
@@ -107,4 +111,6 @@ I applied the propogating labels algorithm described in Raghavan et al. (2007) w
 plot_Attiro(Attiro, V(Attiro)$PL_colors)
 ```
 
-The modularity returned by this algorithm is impressive given that it is claimed to operate in near linear time.
+The algrithm opens with random label assignment, so the resulting memberships and modularity vary from run to run.  In general, the resulting modularities are comperable to those returned by applying the Girvan-Newman algroithm.
+
+
