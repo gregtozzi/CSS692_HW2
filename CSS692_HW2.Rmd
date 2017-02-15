@@ -2,7 +2,10 @@
 title: "CSS692_HW2"
 author: "Greg Tozzi"
 date: "2/13/2017"
-output: html_document
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -11,9 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Importing and Exploring the Graph
 
-The igraph package in R had difficulty parsing the provided Pajek version of the Attior graph.  I wrote the helper function `import_attiro` in R to assist in importing the file and reducing it to an undirected graph.  A plot of the resulting graph follows.  In this plot, and the plots that follow, node groupings map to vertex colors.
+The igraph package in R had difficulty parsing the provided Pajek version of the Attiro graph.  I wrote the helper function `import_attiro` in R to assist in importing the file and reducing it to an undirected graph.  A plot of the resulting graph follows.  In this plot, and the plots that follow, node groupings map to vertex colors.
 
-All of the helper functions I wrote to assist in this assignment are available on GitHub.
+All the helper functions I wrote to assist in this assignment are available in the `helper_functions.R` file on [my GitHub page](https://github.com/gregtozzi/CSS692_HW2)
+.
 
 
 ```{r, echo=FALSE}
@@ -30,7 +34,7 @@ The modularity associated with the grouping assigned by the investigators can be
 
 #### Checking igraph's modularity calculations
 
-The relitively low value of modularatiy for the graph using the investigators' partitioning made me question how igraph is computing modularity.  As a check, I implimented a modularity computation based on the matrix formulation available on Wikipedia.  As expected, it runs substantially slower than the igraph implementation, which is written in C.  The values returned by my function and those returned by igraph's `modularity` are equal for very small graphs, but diverge slightly as graph size increases.  Using the clustering provided by the investigatiors, my function yields a modularity of `r Modularity(Attiro, Group) %>% round(2)`.
+The relatively low value of modularity for the graph using the investigators' partitioning made me question how igraph is computing modularity.  As a check, I implemented a modularity computation based on the matrix formulation available on Wikipedia.  As expected, it runs substantially slower than the igraph implementation, which is written in C.  The values returned by my function and those returned by igraph's `modularity` are equal for very small graphs, but diverge slightly as graph size increases.  Using the clustering provided by the investigators, my function yields a modularity of `r Modularity(Attiro, Group) %>% round(2)`.
 
 ### Applying the Girvan–Newman Algorithm
 
@@ -39,7 +43,7 @@ GN <- cluster_edge_betweenness(Attiro, directed = FALSE)
 GN_mem <- membership(GN)
 ```
 
-I applied the Girvan-Newman algoritm with a call to the igraph package's `cluster_edge_betweenness` function.  Following Newman and Girvan (2003), I treated the graph as undirected by setting the parameter `directed = FALSE`.  The resulting division of the graph into communities resulted in a modularity of `r modularity(Attiro, GN_mem) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
+I applied the Girvan-Newman algorithm with a call to the igraph package's `cluster_edge_betweenness` function.  Following Newman and Girvan (2003), I treated the graph as undirected by setting the parameter `directed = FALSE`.  The resulting division of the graph into communities resulted in a modularity of `r modularity(Attiro, GN_mem) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
 
 ```{r, echo=FALSE}
 plot_Attiro(Attiro, GN_mem, colors_ok_go)
@@ -55,28 +59,28 @@ FG <- cluster_fast_greedy(Attiro_undirected)
 FG_mem <- membership(FG)
 ```
 
-I applied the fast greedy algoritm described in Cluaset et al. (2004) with a call to the igraph package's `cluster_fast_greedy` function.  The implentation in igraph requires that the graph first be converted to an undirected graph.  I accomplished this through a call to `as.undirected`.  The resulting division of the graph into communities produced a modularity of `r modularity(Attiro, FG_mem) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
+I applied the fast greedy algorithm described in Cluaset et al. (2004) with a call to the igraph package's `cluster_fast_greedy` function.  The implantation in igraph requires that the graph first be converted to an undirected graph.  I accomplished this through a call to `as.undirected`.  The resulting division of the graph into communities produced a modularity of `r modularity(Attiro, FG_mem) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
 
 ```{r, echo=FALSE}
 plot_Attiro(Attiro, FG_mem, colors_ok_go)
 ```
 
-In addtion to improving modularity somewhat over using the Girvan–Newman algorithm, the fast greedy algoritm produced a bit more intuative graph.  In particular, the handling of the nodes connected to the main graph via f72 seems more natural when partitioning using the fast greedy algorithm.
+The fast greedy algorithm produced a bit more intuitive graph than did the Girvan–Newman algorithm.
 
-### Applying the Propogating Labels Algorithm
+### Applying the Propagating Labels Algorithm
 
 ```{r, echo=FALSE}
 PL <- cluster_label_prop(Attiro_undirected)
 PL_mem <- membership(PL)
 ```
 
-I applied the propogating labels algorithm described in Raghavan et al. (2007) with a call to the igraph package's `cluster_label_prop` function.  The principal beneift of this alorithm is its speed, although that benefit is not evident when the algorithm is applied to this fairly modest graph.  As with the fast greedy algorithm, the implentation of the propograting labels algorithm in igraph requires that the graph first be converted to an undirected graph.  The resulting division of the graph into communities produced a modularity of `r modularity(Attiro, PL_mem) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
+I applied the propagating labels algorithm described in Raghavan et al. (2007) with a call to the igraph package's `cluster_label_prop` function.  The principal benefit of this algorithm is its speed, although that benefit is not evident when the algorithm is applied to this fairly modest graph.  As with the fast greedy algorithm, using the propagating labels algorithm in igraph requires that the graph first be converted to an undirected graph.  The resulting division of the graph into communities produced a modularity of `r modularity(Attiro, PL_mem) %>% round(2)`.  A plot of the graph showing the new community divisions follows.
 
 ```{r, echo=FALSE}
 plot_Attiro(Attiro, PL_mem, colors_ok_go)
 ```
 
-The algrithm opens with random label assignment, so the resulting memberships and modularity vary from run to run.  In general, the resulting modularities are comperable to those returned by applying the Girvan-Newman algroithm.
+The algorithm opens with random label assignment, so the resulting memberships and modularity vary from run to run.  In general, the resulting modularities are comparable to those returned by applying the Girvan-Newman algorithm.
 
 ### Applying the Louvain Method in Gephi
 
@@ -84,9 +88,12 @@ I imported the Attiro network as an undirected graph in Gephi and applied the Lo
 
 ```{r, echo=FALSE}
 Louvain_DF <- read.csv('Attiro [Nodes].csv')
-Louvain_index <- sort(Louvain_DF$id, index.return = T)$ix
-Louvain_Group <- Louvian_DF$modularity_class[Louvain_index]
+Louvain_index <- sort(Louvain_DF$id, index.return = TRUE)$ix
+Louvain_Group <- Louvain_DF$modularity_class[Louvain_index]
 plot_Attiro(Attiro, Louvain_Group, colors_ok_go)
 ```
 
-The Louvain method produced a modularity of `r modularity(Attiro, Louvain_Group)`.
+The Louvain method produced a modularity of  `r modularity(Attiro, Louvain_Group) %>% round(2)`.
+
+### Conclusions
+The Louvain method in Gephi appears to provide the best modularity of the methods considered.  Given that the groupings generated by the investigators produced such poor modularity scores, it is likely that they used additional information, including the types of relationships, to construct them.  Absent their specific rationale, it is difficult to compare their results to those returned using the various methods considered here.
