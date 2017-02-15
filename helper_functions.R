@@ -1,25 +1,31 @@
-# Define palettes for use in plots
+import_attiro <- function(file) {
+  newGraph <- read_graph(file, format = 'Pajek')
+  newAdjMat <- newGraph %>% as_adj %>% as.matrix > 0
+  newAdjMat <- newAdjMat * 1
+  undirectedGraph <- graph_from_adjacency_matrix(newAdjMat) %>% as.undirected(mode = 'collapse')
+  return(undirectedGraph)
+}
 
-colors_ok_go <- list(rgb(2/255, 66/255, 249/255),
-                     rgb(232/255, 46/255, 20/255),
-                     rgb(61/255, 182/255, 98/255),
-                     rgb(252/255, 209/255, 10/255),
-                     rgb(0/255, 214/255, 251/255),
-                     rgb(247/255, 71/255, 13/255),
-                     rgb(119/255, 22/255, 255/255),
-                     "#B7CB96", "#AF9979", "#827711", 'black',
-                     "#F29525", "#B9177D", "brown")
+# Define palettes for use in plots
+colors_ok_go <- c("#EF4862", "#F275A1", "#F7A08D",
+                     "#E84524", "#EAE613", "#8E8FC7",
+                     "#6C6E9E", "#3D58A7", "#2ABFC3",
+                     "#A0D28B", "#35B44B", "#050608",
+                     "#656565", "#D5D5D5", "#14BBE8")
 
 colors_edges <- c(rgb(119/255, 22/255, 255/255),
                      "#FF2851", "#8E8E93")
 
 assign_colors <- function(membership, Palette) {
   # Assigns colors from a palette based on membership
-  sapply(membership, function(x) Palette[[x]])
+  newMembership <- clean_group(membership)
+  Palette[newMembership]
 }
 
-plot_Attiro <- function(graph, vertexColors) {
+plot_Attiro <- function(graph, membership, Palette) {
   # Automates repetitive plotting tasks
+  l <-layout.kamada.kawai(graph)
+  vertexColors <- assign_colors(membership, Palette)
   plot(graph,
        vertex.label = V(graph)$label,
        vertex.color = vertexColors,
@@ -27,7 +33,8 @@ plot_Attiro <- function(graph, vertexColors) {
        vertex.label.family = "Futura Medium",
        vertex.label.color = 'white',
        vertex.frame.color = 'white',
-       vertex.label.cex = 0.5)
+       vertex.label.cex = 0.5,
+       layout = l)
 }
 
 Modularity <- function(graph, Group) {
